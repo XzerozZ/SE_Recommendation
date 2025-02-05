@@ -34,7 +34,7 @@ def get_similar_nursing_homes(house_name, top_n=3):
         for i, score in similar_houses
     ]
 
-# ทดลอง Predict
+# ทดลอง
 # house_name = "สุขสบายเนอร์สซิงโฮม (It-carehome)"
 # # house_name = 'ข่วงผะหญา เนอร์สซิ่งโฮม ลำปาง'
 # # house_name = 'Homeoflove'
