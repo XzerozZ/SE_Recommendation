@@ -2,6 +2,27 @@ from fastapi import FastAPI
 import uvicorn
 from load_model import *
 
+import faiss
+import numpy as np
+# from sentence_transformers import SentenceTransformer
+from langchain.vectorstores import FAISS
+from langchain.embeddings import HuggingFaceEmbeddings
+# from langchain.schema import Document
+from langchain_google_genai import GoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from dotenv import load_dotenv
+import os
+import pandas as pd
+
+
+load_dotenv()
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+
+embedding_model = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en")
+
+vectorstore = FAISS.load_local("faiss_nursing_homes", embedding_model, allow_dangerous_deserialization=True)
+llm = GoogleGenerativeAI(model="gemini-2.0-flash-exp", google_api_key=GOOGLE_API_KEY)
+
 app = FastAPI()
 
 @app.get("/")
@@ -20,11 +41,56 @@ def read_cosine(nh_name: str):
         for r in recommendations
     ]
 
-    return {"result": recommendations}
+    homes_name_list = [r["Name"] for r in recommendations]
+
+    return {"result": homes_name_list}
 
 @app.get("/llm")
-def read_llm():
-    return {"message": "llm with RAG รอแปป"}
+def read_llm(nh_name: str):
+
+    selected_house = nursing_houses[nursing_houses["Name"] == nh_name].iloc[0]
+    selected_address, selected_price = selected_house["Address"],selected_house["price"]
+
+    query_text = f"{selected_address}, {selected_price}"
+
+
+    query_embedding = embedding_model.embed_query(query_text)
+
+
+    similar_houses = vectorstore.similarity_search_by_vector(query_embedding, k=10)
+
+
+    similar_houses_text = "\n".join([doc.page_content for doc in similar_houses])
+
+
+    system_prompt = f"""
+    You are an AI specialized in recommending nursing homes.
+    Here are some similar nursing homes based on the user's interest:
+    {similar_houses_text}
+    """
+
+
+    user_prompt = f"""You must recommend 3 nursing homes based on the user's interest.
+    You must provide a short response containing only an array of nursing home names.
+    It is extremely important that the names match exactly, including every character and spacing.
+    Do not recommend the following nursing home: {nh_name} because it has already been viewed by the user. This nursing home has the following details:
+    - Address: {selected_address}
+    - Price: {selected_price}
+    Instead, please recommend other nursing homes based on the address and price of {nh_name}.
+    Example response: [Home_Name_1, Home_Name_2, Home_Name_3]"""
+
+
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("human", user_prompt)
+    ])
+
+
+    response = llm.invoke(prompt.format())
+
+
+    # print(response)
+    return {"result": response.strip("[]\n''").split(',')}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8005, reload=True)

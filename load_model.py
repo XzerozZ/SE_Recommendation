@@ -36,10 +36,11 @@ def get_similar_nursing_homes(house_name, top_n=3):
 
 # ทดลอง
 # house_name = "สุขสบายเนอร์สซิงโฮม (It-carehome)"
-# # house_name = 'ข่วงผะหญา เนอร์สซิ่งโฮม ลำปาง'
-# # house_name = 'Homeoflove'
+# house_name = 'ข่วงผะหญา เนอร์สซิ่งโฮม ลำปาง'
+# house_name = 'Homeoflove'
 # recommendations = get_similar_nursing_homes(house_name, top_n=3)
 
 # print(f"บ้านพักที่คล้ายกับ '{house_name}':\n")
 # for rec in recommendations:
-#     print(rec)
+#     print(rec["Name"])
+
