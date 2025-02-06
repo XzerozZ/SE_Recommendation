@@ -13,6 +13,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 import os
 import pandas as pd
+from prompt import get_prompt
 
 
 load_dotenv()
@@ -52,43 +53,18 @@ def read_llm(nh_name: str):
     selected_address, selected_price = selected_house["Address"],selected_house["price"]
 
     query_text = f"{selected_address}, {selected_price}"
-
-
     query_embedding = embedding_model.embed_query(query_text)
 
-
     similar_houses = vectorstore.similarity_search_by_vector(query_embedding, k=10)
-
-
     similar_houses_text = "\n".join([doc.page_content for doc in similar_houses])
 
-
-    system_prompt = f"""
-    You are an AI specialized in recommending nursing homes.
-    Here are some similar nursing homes based on the user's interest:
-    {similar_houses_text}
-    """
-
-
-    user_prompt = f"""You must recommend 3 nursing homes based on the user's interest.
-    You must provide a short response containing only an array of nursing home names.
-    It is extremely important that the names match exactly, including every character and spacing.
-    Do not recommend the following nursing home: {nh_name} because it has already been viewed by the user. This nursing home has the following details:
-    - Address: {selected_address}
-    - Price: {selected_price}
-    Instead, please recommend other nursing homes based on the address and price of {nh_name}.
-    Example response: [Home_Name_1, Home_Name_2, Home_Name_3]"""
-
-
+    system_prompt,user_prompt = get_prompt(similar_houses_text, nh_name, selected_address, selected_price)
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         ("human", user_prompt)
     ])
 
-
     response = llm.invoke(prompt.format())
-
-
     # print(response)
     return {"result": response.strip("[]\n''").split(',')}
 
