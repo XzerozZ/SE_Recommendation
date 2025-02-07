@@ -19,7 +19,8 @@ from prompt import get_prompt
 load_dotenv()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
-embedding_model = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en")
+embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+print(embedding_model.model_name)
 
 vectorstore = FAISS.load_local("faiss_nursing_homes", embedding_model, allow_dangerous_deserialization=True)
 llm = GoogleGenerativeAI(model="gemini-2.0-flash-exp", google_api_key=GOOGLE_API_KEY)
@@ -50,15 +51,18 @@ def read_cosine(nh_name: str):
 def read_llm(nh_name: str):
 
     selected_house = nursing_houses[nursing_houses["Name"] == nh_name].iloc[0]
-    selected_address, selected_price = selected_house["Address"],selected_house["price"]
+    selected_lat, selected_lon, selected_province, selected_price = selected_house["latitude"], selected_house["longitude"], selected_house["Province"],selected_house["price"]
 
-    query_text = f"{selected_address}, {selected_price}"
+    query_text = f"{selected_province}, {selected_price}, {selected_lat}, {selected_lon}"
     query_embedding = embedding_model.embed_query(query_text)
 
     similar_houses = vectorstore.similarity_search_by_vector(query_embedding, k=10)
     similar_houses_text = "\n".join([doc.page_content for doc in similar_houses])
 
-    system_prompt,user_prompt = get_prompt(similar_houses_text, nh_name, selected_address, selected_price)
+    for i in similar_houses_text.split("\n"):
+        print(i)
+
+    system_prompt,user_prompt = get_prompt(similar_houses_text, nh_name, selected_province, selected_price)
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         ("human", user_prompt)
