@@ -5,3 +5,7 @@ pandas
 numpy
 openpyxl
 odfpy
+langchain
+langchain-google-genai
+langchain-community
+faiss-cpu
