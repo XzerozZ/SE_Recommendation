@@ -34,7 +34,7 @@ def read_root():
 @app.get("/cosine")
 # nh_name ล่าสุดที่ user คลิ้กดู
 def read_cosine(nh_name: str):
-    recommendations = get_similar_nursing_homes(nh_name, top_n=3)
+    recommendations = get_similar_nursing_homes(nh_name, top_n=5)
 
     recommendations = [
         {key: int(value) if isinstance(value, np.int64) else 
@@ -70,7 +70,7 @@ def read_llm(nh_name: str):
 
     response = llm.invoke(prompt.format())
     # print(response)
-    return {"result": response.strip("[]\n''").split(',')}
+    return {"result": response.strip("[]\n").split(', ')}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8005, reload=True)

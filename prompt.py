@@ -7,7 +7,7 @@ def get_prompt(similar_houses_text, nh_name, selected_province, selected_price):
     """
 
 
-    user_prompt = f"""You must recommend 3 nursing homes based on the user's interest.
+    user_prompt = f"""You must recommend 5 nursing homes based on the user's interest.
     You must provide a short response containing only an array of nursing home names.
     It is extremely important that the names match exactly, including every character and spacing.
     Do not recommend the following nursing home: {nh_name} because it has already been viewed by the user. This nursing home has the following details:
