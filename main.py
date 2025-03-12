@@ -19,7 +19,9 @@ from prompt import get_prompt
 load_dotenv()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# embedding_model = HuggingFaceEmbeddings(model_name="intfloat/multilingual-e5-large")
+embedding_model = HuggingFaceEmbeddings(model_name="intfloat/multilingual-e5-small")
 print(embedding_model.model_name)
 
 vectorstore = FAISS.load_local("faiss_nursing_homes", embedding_model, allow_dangerous_deserialization=True)
@@ -51,9 +53,9 @@ def read_cosine(nh_name: str):
 def read_llm(nh_name: str):
 
     selected_house = nursing_houses[nursing_houses["Name"] == nh_name].iloc[0]
-    selected_lat, selected_lon, selected_province, selected_price = selected_house["latitude"], selected_house["longitude"], selected_house["Province"],selected_house["price"]
+    selected_province, selected_price = selected_house["Province"],selected_house["price"]
 
-    query_text = f"{selected_province}, {selected_price}, {selected_lat}, {selected_lon}"
+    query_text = f"{selected_province}, {selected_price}"
     query_embedding = embedding_model.embed_query(query_text)
 
     similar_houses = vectorstore.similarity_search_by_vector(query_embedding, k=10)
