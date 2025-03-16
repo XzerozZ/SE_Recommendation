@@ -10,3 +10,5 @@ langchain-google-genai
 langchain-community
 faiss-cpu
 sentence-transformers
+uvicorn
+unquote

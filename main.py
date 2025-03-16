@@ -14,13 +14,14 @@ from dotenv import load_dotenv
 import os
 import pandas as pd
 from prompt import get_prompt
+import uvicorn
+from urllib.parse import unquote
 
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
 embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-print(embedding_model.model_name)
 
 vectorstore = FAISS.load_local("faiss_nursing_homes", embedding_model, allow_dangerous_deserialization=True)
 llm = GoogleGenerativeAI(model="gemini-2.0-flash-exp", google_api_key=GOOGLE_API_KEY)
@@ -34,6 +35,8 @@ def read_root():
 @app.get("/cosine")
 # nh_name ล่าสุดที่ user คลิ้กดู
 def read_cosine(nh_name: str):
+    nh_name = nh_name.replace("_", " ")
+    nh_name = unquote(nh_name)
     recommendations = get_similar_nursing_homes(nh_name, top_n=5)
 
     recommendations = [
@@ -49,7 +52,8 @@ def read_cosine(nh_name: str):
 
 @app.get("/llm")
 def read_llm(nh_name: str):
-
+    nh_name = nh_name.replace("_", " ")
+    nh_name = unquote(nh_name)
     selected_house = nursing_houses[nursing_houses["Name"] == nh_name].iloc[0]
     selected_lat, selected_lon, selected_province, selected_price = selected_house["latitude"], selected_house["longitude"], selected_house["Province"],selected_house["price"]
 
@@ -69,7 +73,6 @@ def read_llm(nh_name: str):
     ])
 
     response = llm.invoke(prompt.format())
-    # print(response)
     return {"result": response.strip("[]\n").split(', ')}
 
 if __name__ == "__main__":
