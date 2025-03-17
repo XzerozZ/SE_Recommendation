@@ -20,7 +20,7 @@ import uvicorn
 load_dotenv()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embedding_model = HuggingFaceEmbeddings(model_name="intfloat/multilingual-e5-small")
 
 vectorstore = FAISS.load_local("faiss_nursing_homes", embedding_model, allow_dangerous_deserialization=True)
 llm = GoogleGenerativeAI(model="gemini-2.0-flash-exp", google_api_key=GOOGLE_API_KEY)
