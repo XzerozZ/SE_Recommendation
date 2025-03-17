@@ -11,4 +11,3 @@ langchain-community
 faiss-cpu
 sentence-transformers
 uvicorn
-unquote

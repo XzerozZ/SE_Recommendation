@@ -15,7 +15,6 @@ import os
 import pandas as pd
 from prompt import get_prompt
 import uvicorn
-from urllib.parse import unquote
 
 
 load_dotenv()
@@ -35,45 +34,49 @@ def read_root():
 @app.get("/cosine")
 # nh_name ล่าสุดที่ user คลิ้กดู
 def read_cosine(nh_name: str):
-    nh_name = nh_name.replace("_", " ")
-    nh_name = unquote(nh_name)
-    recommendations = get_similar_nursing_homes(nh_name, top_n=5)
+    try:
+        nh_name = nh_name.replace("_", " ")
+        recommendations = get_similar_nursing_homes(nh_name, top_n=5)
 
-    recommendations = [
-        {key: int(value) if isinstance(value, np.int64) else 
-             float(value) if isinstance(value, np.float64) else value
-         for key, value in r.items()}
-        for r in recommendations
-    ]
+        recommendations = [
+            {key: int(value) if isinstance(value, np.int64) else 
+                float(value) if isinstance(value, np.float64) else value
+            for key, value in r.items()}
+            for r in recommendations
+        ]
 
-    homes_name_list = [r["Name"] for r in recommendations]
+        homes_name_list = [r["Name"] for r in recommendations]
 
-    return {"result": homes_name_list}
+        return {"result": homes_name_list}
+    except Exception as e:
+        return {"error": "An error occurred."}
 
 @app.get("/llm")
 def read_llm(nh_name: str):
-    nh_name = nh_name.replace("_", " ")
-    nh_name = unquote(nh_name)
-    selected_house = nursing_houses[nursing_houses["Name"] == nh_name].iloc[0]
-    selected_lat, selected_lon, selected_province, selected_price = selected_house["latitude"], selected_house["longitude"], selected_house["Province"],selected_house["price"]
+    try:
+        nh_name = nh_name.replace("_", " ")
+        selected_house = nursing_houses[nursing_houses["Name"] == nh_name].iloc[0]
+        selected_province, selected_price =  selected_house["Province"],selected_house["price"]
 
-    query_text = f"{selected_province}, {selected_price}, {selected_lat}, {selected_lon}"
-    query_embedding = embedding_model.embed_query(query_text)
+        query_text = f"{selected_province}, {selected_price}"
+        query_embedding = embedding_model.embed_query(query_text)
 
-    similar_houses = vectorstore.similarity_search_by_vector(query_embedding, k=10)
-    similar_houses_text = "\n".join([doc.page_content for doc in similar_houses])
+        similar_houses = vectorstore.similarity_search_by_vector(query_embedding, k=10)
+        similar_houses_text = "\n".join([doc.page_content for doc in similar_houses])
 
-    for i in similar_houses_text.split("\n"):
-        print(i)
+        for i in similar_houses_text.split("\n"):
+            print(i)
 
-    system_prompt,user_prompt = get_prompt(similar_houses_text, nh_name, selected_province, selected_price)
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        ("human", user_prompt)
-    ])
+        system_prompt,user_prompt = get_prompt(similar_houses_text, nh_name, selected_province, selected_price)
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", user_prompt)
+        ])
 
-    response = llm.invoke(prompt.format())
-    return {"result": response.strip("[]\n").split(', ')}
+        response = llm.invoke(prompt.format())
+        return {"result": response.strip("[]\n").split(', ')}
+    except Exception as e:
+        return {"error": "An error occurred."}
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8005, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8005, reload=True)
